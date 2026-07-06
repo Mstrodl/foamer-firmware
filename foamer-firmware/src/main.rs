@@ -13,7 +13,6 @@ use critical_section::Mutex;
 use cyw43::JoinOptions;
 use cyw43_pio::{DEFAULT_CLOCK_DIVIDER, PioSpi};
 use defmt::*;
-use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_futures::join::join_array;
 use embassy_net::dns::{DnsQueryType, DnsSocket};
@@ -34,10 +33,7 @@ use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::channel::{Channel, TrySendError};
 use embassy_sync::signal::Signal;
 use embassy_time::{Duration, Instant, TimeoutError, Timer};
-use embassy_usb::class::{
-    // cdc_acm::{CdcAcmClass, State},
-    web_usb::{Config as WebUsbConfig, State, Url, WebUsb},
-};
+use embassy_usb::class::web_usb::{Config as WebUsbConfig, State, Url, WebUsb};
 use embassy_usb::{
     UsbDevice,
     msos::{self, windows_version},
@@ -55,6 +51,12 @@ use strum::VariantArray;
 use crate::flash::FlashCommand;
 use crate::profile_usb::ProfileUsbEndpoints;
 use crate::withrottle::{ProfileWrapper, WiThrottleClient, WiThrottleError};
+
+#[cfg(feature = "usb-logging")]
+mod usb_logging;
+
+#[cfg(not(feature = "usb-logging"))]
+use defmt_rtt as _;
 
 mod buf_reader;
 mod flash;
@@ -539,6 +541,9 @@ async fn main(spawner: Spawner) {
     };
 
     let profile_usb_endpoints = ProfileUsbEndpoints::new(webusb_config, &mut builder);
+
+    #[cfg(feature = "usb-logging")]
+    crate::usb_logging::init(&spawner, &mut builder);
 
     // Build the builder.
     let usb = builder.build();

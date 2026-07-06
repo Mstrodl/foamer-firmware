@@ -6,6 +6,9 @@ license = "MIT OR Apache-2.0"
 
 publish = false
 
+[features]
+usb-logging = []
+
 [dependencies]
 embassy-embedded-hal = { version = "0.6.0", features = ["defmt"] }
 embassy-sync = { version = "0.8.0", features = ["defmt"] }
@@ -19,6 +22,7 @@ cyw43-pio = { version = "0.10.0", features = ["defmt"] }
 
 defmt = "1.0.1"
 defmt-rtt = { version = "1.0.0", features = ["disable-blocking-mode"] }
+defmtusb = { path = "../defmtusb" }
 
 cortex-m = { version = "0.7.6", features = ["inline-asm"] }
 cortex-m-rt = "0.7.0"
