@@ -9,8 +9,8 @@ use embassy_sync::signal::Signal;
 use embassy_time::Duration;
 use embedded_io_async::{Read, ReadExactError, Write};
 use foamer_types::{
-    Address, Config, Function, FunctionBehavior, FunctionConfig, MU_COUNT, PROFILE_FUNCTION_COUNT,
-    Profile,
+    Address, Config, Function, FunctionBehavior, FunctionConfig, Locomotive, MU_COUNT,
+    PROFILE_FUNCTION_COUNT, Profile,
 };
 use heapless::{String, Vec};
 use itertools::Itertools;
@@ -65,7 +65,7 @@ pub struct WiThrottleClient<'a, Conn: Read + Write> {
     functions: [FunctionData; PROFILE_FUNCTION_COUNT],
     connection: BufReader<Conn>,
     profile: ProfileWrapper,
-    address: Vec<Address, MU_COUNT>,
+    locomotives: Vec<Locomotive, MU_COUNT>,
     line_buffer: &'a mut [u8; 4096],
     // Different per loco
     locomotive_buffer: &'a mut StringCollection<4096, MU_COUNT>,
@@ -121,7 +121,7 @@ where
 
         let mut this = Self {
             connection: connection.into(),
-            address: profile.with(|profile| profile.address.clone()),
+            locomotives: profile.with(|profile| profile.locomotives.clone()),
             profile,
             functions: Default::default(),
             line_buffer,
@@ -160,49 +160,49 @@ where
     }
 
     pub async fn set_profile(&mut self, profile_index: usize) -> Result<(), WiThrottleError> {
-        let old_addresses = self.address.clone();
-        let new_addresses = self
+        let old_locomotives = self.locomotives.clone();
+        let new_locomotives = self
             .profile
-            .with_profile_at_index(profile_index, |profile| profile.address.clone());
+            .with_profile_at_index(profile_index, |profile| profile.locomotives.clone());
         let mut any_new_locomotives = false;
-        for (address_index, (old_address, new_address)) in old_addresses
+        for (address_index, (old_locomotive, new_locomotive)) in old_locomotives
             .iter()
             .copied()
-            .zip_longest(new_addresses.iter().copied())
+            .zip_longest(new_locomotives.iter().copied())
             .map(|item| item.left_and_right())
             .enumerate()
             .collect::<Vec<_, MU_COUNT>>()
         {
-            if old_address != new_address {
+            if old_locomotive != new_locomotive {
                 self.locomotive_buffer.clear(address_index);
-                if old_address.is_some() {
+                if old_locomotive.is_some() {
                     self.remove_locomotive(address_index).await?;
                 }
-                if new_address.is_some() {
+                if new_locomotive.is_some() {
                     any_new_locomotives = true;
                 }
             }
         }
 
         self.profile.profile_index = profile_index;
-        self.address = new_addresses;
+        self.locomotives = new_locomotives;
 
         if any_new_locomotives {
             // Try and find our locomotives in the roster
             self.handle_roster().await?;
         }
 
-        for (address_index, (old_address, new_address)) in old_addresses
+        for (address_index, (old_locomotive, new_locomotive)) in old_locomotives
             .iter()
             .copied()
-            .zip_longest(self.address.iter().copied())
+            .zip_longest(self.locomotives.iter().copied())
             .map(|item| item.left_and_right())
             .enumerate()
             .collect::<Vec<_, MU_COUNT>>()
         {
             self.reset_function_mapping(address_index);
-            if new_address.is_some() {
-                if old_address == new_address {
+            if new_locomotive.is_some() {
+                if old_locomotive == new_locomotive {
                     // Profile function mapping is probably different
                     self.handle_locomotive(address_index).await?;
                 }
@@ -250,7 +250,7 @@ where
                 _ => defmt::unimplemented!(),
             };
             // I don't care about this one
-            if address != self.address[address_index] {
+            if address != self.locomotives[address_index].address {
                 return Ok(());
             }
             defmt::info!("This is info about OUR locomotive! {} {}", address, line);
@@ -328,15 +328,15 @@ where
     }
 
     async fn handle_roster(&mut self) -> Result<(), WiThrottleError> {
-        for (address_index, address) in self
-            .address
+        for (address_index, locomotive) in self
+            .locomotives
             .iter()
             .copied()
             .enumerate()
             .collect::<Vec<_, MU_COUNT>>()
         {
-            defmt::info!("Adding locomotive at address {}...", address);
-            self.add_locomotive(address_index, address).await?;
+            defmt::info!("Adding locomotive {}...", locomotive);
+            self.add_locomotive(address_index, locomotive).await?;
         }
         Ok(())
     }
@@ -351,16 +351,16 @@ where
     async fn add_locomotive(
         &mut self,
         address_index: usize,
-        address: Address,
+        locomotive: Locomotive,
     ) -> Result<(), WiThrottleError> {
         self.write_throttle(address_index).await?;
         self.connection.write_all(b"+").await?;
         self.connection
-            .write_all(address.to_withrottle().as_bytes())
+            .write_all(locomotive.address.to_withrottle().as_bytes())
             .await?;
         self.connection.write_all(b"<;>").await?;
         self.connection
-            .write_all(address.to_withrottle().as_bytes())
+            .write_all(locomotive.address.to_withrottle().as_bytes())
             .await?;
         self.connection.write_all(b"\n").await?;
 
@@ -374,7 +374,7 @@ where
         // if let Some(self.profile.functions
 
         // Implicitly sends speed update too
-        self.set_direction(self.direction).await?;
+        self.send_direction(address_index).await?;
 
         for function_id in 0..self.functions.len() {
             self.send_function_state(address_index, function_id).await?;
@@ -425,7 +425,12 @@ where
         self.write_throttle(address_index).await?;
         self.connection.write_all(b"A").await?;
         self.connection
-            .write_all(self.address[address_index].to_withrottle().as_bytes())
+            .write_all(
+                self.locomotives[address_index]
+                    .address
+                    .to_withrottle()
+                    .as_bytes(),
+            )
             .await?;
         self.connection.write_all(b"<;>").await?;
         Ok(())
@@ -489,9 +494,9 @@ where
                 FunctionBehavior::All => true,
                 FunctionBehavior::Leading => address_index == 0,
                 FunctionBehavior::Trailing => address_index != 0,
-                FunctionBehavior::Last => address_index == self.address.len() - 1,
+                FunctionBehavior::Last => address_index == self.locomotives.len() - 1,
                 FunctionBehavior::Inner => {
-                    address_index != 0 && address_index != self.address.len() - 1
+                    address_index != 0 && address_index != self.locomotives.len() - 1
                 }
             };
         // Unnecessary clone of the label, but boohoo
@@ -534,27 +539,30 @@ where
         // here's where any cleverness would go
         let function = &mut self.functions[button_id];
         function.state = state;
-        for address_index in 0..self.address.len() {
+        for address_index in 0..self.locomotives.len() {
             self.send_function_state(address_index, button_id).await?;
         }
         Ok(())
     }
 
-    pub async fn send_speed(&mut self) -> Result<(), WiThrottleError> {
+    async fn send_speed_for(&mut self, address_index: usize) -> Result<(), WiThrottleError> {
         let speed = if self.direction == ReverserPosition::Neutral {
             0
         } else {
             self.speed
         };
-        for address_index in 0..self.address.len() {
-            self.write_locomotive_action(address_index).await?;
-            self.connection.write_all(b"V").await?;
-            self.connection
-                .write_all(
-                    defmt::unwrap!(heapless::format!(5; "{speed}"), "Format speed").as_bytes(),
-                )
-                .await?;
-            self.connection.write_all(b"\n").await?;
+        self.write_locomotive_action(address_index).await?;
+        self.connection.write_all(b"V").await?;
+        self.connection
+            .write_all(defmt::unwrap!(heapless::format!(5; "{speed}"), "Format speed").as_bytes())
+            .await?;
+        self.connection.write_all(b"\n").await?;
+        Ok(())
+    }
+
+    pub async fn send_speed(&mut self) -> Result<(), WiThrottleError> {
+        for address_index in 0..self.locomotives.len() {
+            self.send_speed_for(address_index).await?;
         }
         Ok(())
     }
@@ -565,23 +573,33 @@ where
         Ok(())
     }
 
+    pub async fn send_direction(&mut self, address_index: usize) -> Result<(), WiThrottleError> {
+        let direction = match self.direction {
+            ReverserPosition::Reverse => Some(false),
+            ReverserPosition::Forwards => Some(true),
+            ReverserPosition::Neutral => None,
+        }
+        .map(|direction| direction ^ self.locomotives[address_index].invert_direction);
+
+        if let Some(direction) = direction {
+            self.write_locomotive_action(address_index).await?;
+            self.connection.write_all(b"R").await?;
+            self.connection
+                .write_all(if direction { b"1" } else { b"0" })
+                .await?;
+            self.connection.write_all(b"\n").await?;
+        }
+        self.send_speed_for(address_index).await?;
+        Ok(())
+    }
+
     pub async fn set_direction(
         &mut self,
         direction: ReverserPosition,
     ) -> Result<(), WiThrottleError> {
         self.direction = direction;
-        let direction = match direction {
-            ReverserPosition::Reverse => Some(b"0"),
-            ReverserPosition::Forwards => Some(b"1"),
-            ReverserPosition::Neutral => None,
-        };
-        if let Some(direction) = direction {
-            for address_index in 0..self.address.len() {
-                self.write_locomotive_action(address_index).await?;
-                self.connection.write_all(b"R").await?;
-                self.connection.write_all(direction).await?;
-                self.connection.write_all(b"\n").await?;
-            }
+        for address_index in 0..self.locomotives.len() {
+            self.send_direction(address_index).await?;
         }
         self.send_speed().await?;
         Ok(())

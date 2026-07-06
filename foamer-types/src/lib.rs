@@ -37,6 +37,13 @@ pub enum Address {
     Long(u16),
 }
 
+#[derive(Serialize, Deserialize, Eq, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(Format))]
+pub struct Locomotive {
+    pub address: Address,
+    pub invert_direction: bool,
+}
+
 #[derive(Serialize, Deserialize, Default, Clone, Copy, Eq, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(Format))]
 pub enum FunctionBehavior {
@@ -102,7 +109,7 @@ pub struct FunctionConfig {
 #[derive(Eq, PartialEq, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "defmt", derive(Format))]
 pub struct Profile {
-    pub address: Vec<Address, MU_COUNT>,
+    pub locomotives: Vec<Locomotive, MU_COUNT>,
     pub functions: [Option<FunctionConfig>; PROFILE_FUNCTION_COUNT],
 }
 
@@ -180,12 +187,16 @@ impl Default for Config {
         Self {
             base_config: Default::default(),
             profiles: core::array::from_fn(|index| Profile {
-                address: [
+                locomotives: [
                     0x7430, 0x8104, 0x2303, 0x2304, //
                     0x7420, 0x3600, 0x1957, 0x8014, //
                     0x7420, 0x8104,
                 ]
                 .map(Address::Long)
+                .map(|address| Locomotive {
+                    address,
+                    invert_direction: false,
+                })
                 .map(|address| Vec::from_array([address]))[index]
                     .clone(),
                 functions: [

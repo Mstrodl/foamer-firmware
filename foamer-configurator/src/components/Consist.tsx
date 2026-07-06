@@ -2,23 +2,25 @@ import { AddressSelector } from "../components/AddressSelector";
 import { MU_COUNT, setConfig, useConfig } from "../stores/configStore";
 
 export function Consist({ profileId }: { profileId: number }) {
-    const addresses = useConfig((config) => config.profiles[profileId].address);
+    const locomotives = useConfig(
+        (config) => config.profiles[profileId].locomotives,
+    );
 
     return (
         <div>
-            {addresses.map((_, addressId) => (
+            {locomotives.map((_, locomotiveId) => (
                 <div
-                    key={addressId}
+                    key={locomotiveId}
                     className="flex flex-col md:flex-row md:gap-4"
                 >
                     <div className="flex-1">
                         <AddressSelector
-                            value={addresses[addressId]}
+                            value={locomotives[locomotiveId]}
                             onChange={(value) =>
                                 setConfig((config) => {
                                     config = structuredClone(config);
-                                    config.profiles[profileId].address[
-                                        addressId
+                                    config.profiles[profileId].locomotives[
+                                        locomotiveId
                                     ] = value;
                                     return config;
                                 })
@@ -35,11 +37,11 @@ export function Consist({ profileId }: { profileId: number }) {
                                         config = structuredClone(config);
                                         config.profiles[
                                             profileId
-                                        ].address.splice(addressId, 1);
+                                        ].locomotives.splice(locomotiveId, 1);
                                         return config;
                                     });
                                 }}
-                                disabled={addresses.length <= 1}
+                                disabled={locomotives.length <= 1}
                             >
                                 Remove
                             </button>
@@ -53,13 +55,16 @@ export function Consist({ profileId }: { profileId: number }) {
                 onClick={() => {
                     setConfig((config) => {
                         config = structuredClone(config);
-                        config.profiles[profileId].address.push({
-                            Long: 0x6969,
+                        config.profiles[profileId].locomotives.push({
+                            address: {
+                                Long: 0x6969,
+                            },
+                            invert_direction: false,
                         });
                         return config;
                     });
                 }}
-                disabled={addresses.length >= MU_COUNT}
+                disabled={locomotives.length >= MU_COUNT}
             >
                 Add Unit
             </button>

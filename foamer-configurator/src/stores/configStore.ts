@@ -26,7 +26,7 @@ export const MU_COUNT: number = 10;
 export const WIFI_COUNT: number = 5;
 
 const DEFAULT_PROFILE: Profile = {
-    address: [{ Long: 0x6969 }],
+    locomotives: [{ address: { Long: 0x6969 }, invert_direction: false }],
     functions: new Array(21).fill(null),
 };
 
@@ -76,8 +76,13 @@ const addressSchema = z.union([
     }),
 ]);
 
+const locomotiveSchema = z.object({
+    address: addressSchema,
+    invert_direction: z.boolean(),
+});
+
 const profileSchema = z.object({
-    address: z.array(addressSchema).min(1).max(MU_COUNT),
+    locomotives: z.array(locomotiveSchema).min(1).max(MU_COUNT),
     functions: z.array(functionConfigSchema.nullable()).length(21),
 });
 
@@ -116,6 +121,7 @@ export type WifiConfig = z.infer<typeof wifiSchema>;
 export type Profile = z.infer<typeof profileSchema>;
 export type BaseConfig = z.infer<typeof baseConfigSchema>;
 export type Address = z.infer<typeof addressSchema>;
+export type Locomotive = z.infer<typeof locomotiveSchema>;
 export type Hardcoded = z.infer<typeof hardcodedSchema>;
 export type Label = z.infer<typeof labelSchema>;
 

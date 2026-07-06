@@ -1,41 +1,46 @@
-import type { Address } from "../stores/configStore";
+import type { Address, Locomotive } from "../stores/configStore";
 
 export function AddressSelector({
     value,
     onChange,
 }: {
-    value: Address;
-    onChange: (address: Address) => unknown;
+    value: Locomotive;
+    onChange: (locomotive: Locomotive) => unknown;
 }) {
-    const type = "Long" in value ? ("Long" as const) : ("Short" as const);
-    const addressNumber = "Long" in value ? value.Long : value.Short;
+    const address = value.address;
+    const type = "Long" in address ? ("Long" as const) : ("Short" as const);
+    const addressNumber = "Long" in address ? address.Long : address.Short;
 
-    function onChangeWrapped(address: Address) {
-        console.log("On change wrapped", address);
+    function onChangeWrapped(locomotive: Locomotive) {
+        const address = locomotive.address;
         if ("Long" in address) {
             address.Long &= 0xffff;
         } else if ("Short" in address) {
             address.Short &= 0xff;
         }
-        onChange(address);
+        onChange(locomotive);
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 md:gap-4">
             <label
-                htmlFor="address"
+                htmlFor="addressType"
                 className="block text-sm font-semibold text-[var(--sea-ink)]"
             >
                 Locomotive Address Type
                 <select
                     name="addressType"
+                    id="addressType"
                     className="my-2 demo-select"
                     value={type}
                     onChange={(event) => {
                         onChangeWrapped({
-                            [event.target.value as "Long" | "Short"]:
-                                addressNumber,
-                        } as Address);
+                            ...value,
+                            address: {
+                                [event.target.value as "Long" | "Short"]:
+                                    addressNumber,
+                            } as Address,
+                        });
                     }}
                 >
                     <option value="Long">Long</option>
@@ -43,22 +48,49 @@ export function AddressSelector({
                 </select>
             </label>
             <label
-                htmlFor="address-number"
+                htmlFor="addressNumber"
                 className="block text-sm font-semibold text-[var(--sea-ink)]"
             >
                 Address
                 <input
                     type="text"
-                    name="address-number"
+                    name="addressNumber"
+                    id="addressNumber"
                     className="my-2 demo-input"
                     value={addressNumber.toString(16)}
                     maxLength={type == "Long" ? 4 : 2}
                     onChange={(event) => {
                         onChangeWrapped({
-                            [type]: parseInt(event.target.value, 16),
-                        } as Address);
+                            ...value,
+                            address: {
+                                [type]: parseInt(event.target.value, 16),
+                            } as Address,
+                        });
                     }}
                 />
+            </label>
+            <label
+                htmlFor="locomotiveInvertDirection"
+                className="block text-sm font-semibold text-[var(--sea-ink)]"
+            >
+                Direction
+                <select
+                    name="locomotiveInvertDirection"
+                    id="locomotiveInvertDirection"
+                    className="my-2 demo-select"
+                    value={value.invert_direction ? "Reversed" : "Normal"}
+                    onChange={(event) => {
+                        onChangeWrapped({
+                            ...value,
+                            invert_direction:
+                                (event.target.value as "Normal" | "Reversed") ==
+                                "Reversed",
+                        });
+                    }}
+                >
+                    <option value="Normal">Normal</option>
+                    <option value="Reversed">Reversed</option>
+                </select>
             </label>
         </div>
     );
