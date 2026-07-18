@@ -2,7 +2,7 @@ pushd foamer-configurator
 pnpm run check
 popd
 
-for f in foamer-firmware foamer-types foamer-cli foamer-configurator; do
+for f in foamer-firmware foamer-types foamer-cli foamer-configurator defmtusb; do
   pushd $f
   cargo clippy -- -Dwarnings
   cargo fmt --check
