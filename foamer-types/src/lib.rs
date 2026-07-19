@@ -111,6 +111,7 @@ pub struct FunctionConfig {
 pub struct Profile {
     pub locomotives: Vec<Locomotive, MU_COUNT>,
     pub functions: [Option<FunctionConfig>; PROFILE_FUNCTION_COUNT],
+    pub steps: [u8; 9]
 }
 
 #[derive(Eq, PartialEq, Clone, Default, Serialize, Deserialize)]
@@ -309,6 +310,7 @@ impl Default for Config {
                         behavior: FunctionBehavior::Leading,
                     }), // Horn
                 ],
+                steps: [0, 6, 15, 26, 34, 41, 48, 58, 68],
             }),
         }
     }

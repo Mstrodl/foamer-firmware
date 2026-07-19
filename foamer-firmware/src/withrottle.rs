@@ -571,8 +571,8 @@ where
         Ok(())
     }
 
-    pub async fn set_speed(&mut self, speed: u8) -> Result<(), WiThrottleError> {
-        self.speed = speed;
+    pub async fn set_speed(&mut self, step: usize) -> Result<(), WiThrottleError> {
+        self.speed = self.profile.with(|profile| profile.steps.clone())[step];
         self.send_speed().await?;
         Ok(())
     }
