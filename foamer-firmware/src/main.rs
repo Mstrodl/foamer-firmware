@@ -800,7 +800,7 @@ async fn main(spawner: Spawner) {
                             withrottle_client.set_direction(direction).await?;
                         }
                         WiThrottleRequest::SetThrottle(position) => {
-                            withrottle_client.set_speed((position as u8) * 15).await?;
+                            withrottle_client.set_speed(position as usize).await?;
                         }
                         WiThrottleRequest::Heartbeat => {
                             withrottle_client.heartbeat().await?;
