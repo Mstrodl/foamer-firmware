@@ -38,7 +38,6 @@ struct FunctionData {
     /// State the function is in (pressed or not), so we can copy it when we
     /// swap profiles or otherwise reconnect
     state: bool,
-    behavior: FunctionBehavior,
 }
 
 pub struct ProfileWrapper {
@@ -489,23 +488,28 @@ where
         function_id: usize,
     ) -> Result<(), WiThrottleError> {
         let function = &self.functions[function_id];
+
+        // Unnecessary clone of the label, but boohoo
+        let profile_function = self
+            .profile
+            .with(|profile| profile.functions[function_id].clone());
+
         let state = function.state
-            && match function.behavior {
-                FunctionBehavior::All => true,
-                FunctionBehavior::Leading => address_index == 0,
-                FunctionBehavior::Trailing => address_index != 0,
-                FunctionBehavior::Last => address_index == self.locomotives.len() - 1,
-                FunctionBehavior::Inner => {
+            && match profile_function
+                .as_ref()
+                .map(|profile_function| profile_function.behavior)
+            {
+                Some(FunctionBehavior::All) => true,
+                Some(FunctionBehavior::Leading) => address_index == 0,
+                Some(FunctionBehavior::Trailing) => address_index != 0,
+                Some(FunctionBehavior::Last) => address_index == self.locomotives.len() - 1,
+                Some(FunctionBehavior::Inner) => {
                     address_index != 0 && address_index != self.locomotives.len() - 1
                 }
+                None => false,
             };
-        // Unnecessary clone of the label, but boohoo
-        match self.profile.with(|profile| {
-            profile.functions[function_id]
-                .as_ref()
-                .map(|function| &function.function)
-                .cloned()
-        }) {
+
+        match profile_function.map(|profile_function| profile_function.function) {
             Some(Function::Label {
                 label: _,
                 momentary,
