@@ -111,7 +111,7 @@ pub struct FunctionConfig {
 pub struct Profile {
     pub locomotives: Vec<Locomotive, MU_COUNT>,
     pub functions: [Option<FunctionConfig>; PROFILE_FUNCTION_COUNT],
-    pub steps: [u8; 9]
+    pub steps: [u8; 9],
 }
 
 #[derive(Eq, PartialEq, Clone, Default, Serialize, Deserialize)]

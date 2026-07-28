@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Consist } from "../components/Consist";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { FunctionGroup } from "../components/FunctionGroup";
+import { StepConfig } from "../components/StepConfig";
 import { WifiConfig } from "../components/WifiConfig";
 import { WiThrottleConfig } from "../components/WiThrottleConfig";
 import {
@@ -153,6 +154,18 @@ function App() {
                                 functions={BRAKE_LABELS}
                             />
                         </div>
+                    </section>
+
+                    <section className="island-shell mt-8 rounded-2xl p-6">
+                        <p className="island-kicker mb-2">
+                            Throttle Notch Configuration
+                        </p>
+
+                        <p className="m-0 max-w-3xl text-base leading-8 text-[var(--sea-ink-soft)] my-2">
+                            What speed step should each notch send?
+                        </p>
+
+                        <StepConfig profileId={profileId} />
                     </section>
 
                     <section className="island-shell mt-8 rounded-2xl p-6">
