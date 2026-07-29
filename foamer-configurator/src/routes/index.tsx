@@ -12,6 +12,8 @@ import {
     configStore,
     DEFAULT_CONFIG,
     HORN_INDEX,
+    STARTUP_COUNT,
+    STARTUP_INDEX,
     TRIPLE_SWITCH_FUNCTION_COUNT,
     TRIPLE_SWITCH_START_INDEX,
     TRIPLE_SWITCHES,
@@ -152,6 +154,21 @@ function App() {
                                 start={BRAKE_START_INDEX}
                                 profileId={profileId}
                                 functions={BRAKE_LABELS}
+                            />
+
+                            <FunctionGroup
+                                groupName="Startup"
+                                typeLabel={(_name, _index) =>
+                                    `When consist is started`
+                                }
+                                start={STARTUP_INDEX}
+                                profileId={profileId}
+                                functions={new Array(STARTUP_COUNT)
+                                    .fill(null)
+                                    .map(
+                                        (_, index) =>
+                                            `Startup Function ${index + 1}`,
+                                    )}
                             />
                         </div>
                     </section>
