@@ -309,6 +309,10 @@ impl Default for Config {
                         },
                         behavior: FunctionBehavior::Leading,
                     }), // Horn
+                    // Startup
+                    None,
+                    None,
+                    None,
                 ],
                 steps: [0, 6, 15, 26, 34, 41, 48, 58, 68],
             }),
@@ -320,11 +324,13 @@ pub const USER_BUTTONS: usize = 6;
 pub const TRIPLE_SWITCHES: usize = 3;
 pub const TRIPLE_SWITCH_FUNCTION_COUNT: usize = TripleSwitchState::Down as usize + 1;
 pub const BRAKE_COUNT: usize = BrakeState::Emergency as usize + 1;
+pub const STARTUP_COUNT: usize = 3;
 
 pub const TRIPLE_SWITCH_START_INDEX: usize = USER_BUTTONS;
 pub const BRAKE_START_INDEX: usize =
     TRIPLE_SWITCH_START_INDEX + (TRIPLE_SWITCHES * TRIPLE_SWITCH_FUNCTION_COUNT);
 pub const HORN_INDEX: usize = BRAKE_START_INDEX + BRAKE_COUNT;
-pub const PROFILE_FUNCTION_COUNT: usize = HORN_INDEX + 1;
+pub const STARTUP_INDEX: usize = HORN_INDEX + 1;
+pub const PROFILE_FUNCTION_COUNT: usize = STARTUP_INDEX + STARTUP_COUNT;
 
 pub const MU_COUNT: usize = 10;
