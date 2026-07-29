@@ -16,18 +16,20 @@ export const USER_BUTTONS: number = 6;
 export const TRIPLE_SWITCHES: number = 3;
 export const TRIPLE_SWITCH_FUNCTION_COUNT: number = 3;
 export const BRAKE_COUNT: number = 5;
+export const STARTUP_COUNT: number = 3;
 
 export const TRIPLE_SWITCH_START_INDEX: number = USER_BUTTONS;
 export const BRAKE_START_INDEX: number =
     TRIPLE_SWITCH_START_INDEX + TRIPLE_SWITCHES * TRIPLE_SWITCH_FUNCTION_COUNT;
 export const HORN_INDEX: number = BRAKE_START_INDEX + BRAKE_COUNT;
-export const PROFILE_FUNCTION_COUNT: number = HORN_INDEX + 1;
+export const STARTUP_INDEX: number = HORN_INDEX + 1;
+export const PROFILE_FUNCTION_COUNT: number = STARTUP_INDEX + STARTUP_COUNT;
 export const MU_COUNT: number = 10;
 export const WIFI_COUNT: number = 5;
 
 const DEFAULT_PROFILE: Profile = {
     locomotives: [{ address: { Long: 0x6969 }, invert_direction: false }],
-    functions: new Array(21).fill(null),
+    functions: new Array(PROFILE_FUNCTION_COUNT).fill(null),
     steps: [0, 6, 15, 26, 34, 41, 48, 58, 68],
 };
 
@@ -86,7 +88,9 @@ const stepsSchema = z.number().array().length(9).min(0).max(126);
 
 const profileSchema = z.object({
     locomotives: z.array(locomotiveSchema).min(1).max(MU_COUNT),
-    functions: z.array(functionConfigSchema.nullable()).length(21),
+    functions: z
+        .array(functionConfigSchema.nullable())
+        .length(PROFILE_FUNCTION_COUNT),
     steps: stepsSchema,
 });
 
