@@ -10,7 +10,7 @@ use embassy_time::Duration;
 use embedded_io_async::{Read, ReadExactError, Write};
 use foamer_types::{
     Address, Config, Function, FunctionBehavior, FunctionConfig, Locomotive, MU_COUNT,
-    PROFILE_FUNCTION_COUNT, Profile,
+    PROFILE_FUNCTION_COUNT, Profile, STARTUP_INDEX,
 };
 use heapless::{String, Vec};
 use itertools::Itertools;
@@ -273,8 +273,9 @@ where
 
     fn reset_function_mapping(&mut self, address_index: usize) {
         defmt::trace!("Resetting function mapping for {}...", address_index);
-        for function in self.functions.iter_mut() {
-            function.withrottle_id[address_index] = None;
+        for index in 0..PROFILE_FUNCTION_COUNT {
+            self.functions[index].withrottle_id[address_index] = None;
+            self.functions[index].state = index >= STARTUP_INDEX;
         }
     }
 
