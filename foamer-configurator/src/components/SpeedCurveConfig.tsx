@@ -34,7 +34,8 @@ function SpeedCurveEntry({
     return (
         <label
             htmlFor={notchString}
-            className="block text-sm font-semibold text-[var(--sea-ink)]"
+            className="block text-sm 
+            font-semibold text-[var(--sea-ink)]"
         >
             Speed at Notch {index + 1}:
             <input

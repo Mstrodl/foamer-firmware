@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Consist } from "../components/Consist";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { FunctionGroup } from "../components/FunctionGroup";
-import { StepConfig } from "../components/StepConfig";
+import { SpeedCurveConfig } from "../components/SpeedCurveConfig";
 import { WifiConfig } from "../components/WifiConfig";
 import { WiThrottleConfig } from "../components/WiThrottleConfig";
 import {
@@ -159,7 +159,7 @@ function App() {
                             <FunctionGroup
                                 groupName="Startup"
                                 typeLabel={(_name, _index) =>
-                                    `When consist is started`
+                                    `When profile is selected`
                                 }
                                 start={STARTUP_INDEX}
                                 profileId={profileId}
@@ -175,14 +175,14 @@ function App() {
 
                     <section className="island-shell mt-8 rounded-2xl p-6">
                         <p className="island-kicker mb-2">
-                            Throttle Notch Configuration
+                            Throttle Notch Speed Curve Configuration
                         </p>
 
                         <p className="m-0 max-w-3xl text-base leading-8 text-[var(--sea-ink-soft)] my-2">
-                            What speed step should each notch send?
+                            What speed should each notch correspond to?
                         </p>
 
-                        <StepConfig profileId={profileId} />
+                        <SpeedCurveConfig profileId={profileId} />
                     </section>
 
                     <section className="island-shell mt-8 rounded-2xl p-6">

@@ -30,7 +30,7 @@ export const WIFI_COUNT: number = 5;
 const DEFAULT_PROFILE: Profile = {
     locomotives: [{ address: { Long: 0x6969 }, invert_direction: false }],
     functions: new Array(PROFILE_FUNCTION_COUNT).fill(null),
-    steps: [0, 6, 15, 26, 34, 41, 48, 58, 68],
+    speed_curve: [6, 15, 26, 34, 41, 48, 58, 68],
 };
 
 const momentarySchema = {
@@ -84,14 +84,14 @@ const locomotiveSchema = z.object({
     invert_direction: z.boolean(),
 });
 
-const stepsSchema = z.number().array().length(9).min(0).max(126);
+const speedCurveSchema = z.number().array().length(8).min(0).max(126);
 
 const profileSchema = z.object({
     locomotives: z.array(locomotiveSchema).min(1).max(MU_COUNT),
     functions: z
         .array(functionConfigSchema.nullable())
         .length(PROFILE_FUNCTION_COUNT),
-    steps: stepsSchema,
+    speed_curve: speedCurveSchema,
 });
 
 const wifiSchema = z.object({
@@ -132,7 +132,7 @@ export type Address = z.infer<typeof addressSchema>;
 export type Locomotive = z.infer<typeof locomotiveSchema>;
 export type Hardcoded = z.infer<typeof hardcodedSchema>;
 export type Label = z.infer<typeof labelSchema>;
-export type Steps = z.infer<typeof stepsSchema>;
+export type SpeedCurve = z.infer<typeof speedCurveSchema>;
 
 // TODO: Mary save the config in local storage and read back!!
 export const DEFAULT_CONFIG: Config = {
