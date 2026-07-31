@@ -1,6 +1,6 @@
 use crate::buf_reader::{BufReader, BufReaderError, ReadLineError};
 use crate::string_collection::StringCollection;
-use crate::{CancellationSignal, ReverserPosition};
+use crate::{CancellationSignal, ReverserPosition, ThrottlePosition};
 use core::cell::RefCell;
 use critical_section::Mutex;
 use defmt::Format;
@@ -10,7 +10,7 @@ use embassy_time::Duration;
 use embedded_io_async::{Read, ReadExactError, Write};
 use foamer_types::{
     Address, Config, Function, FunctionBehavior, FunctionConfig, Locomotive, MU_COUNT,
-    PROFILE_FUNCTION_COUNT, Profile, STARTUP_INDEX,
+    PROFILE_FUNCTION_COUNT, Profile, STARTUP_END, STARTUP_INDEX,
 };
 use heapless::{String, Vec};
 use itertools::Itertools;
@@ -71,7 +71,7 @@ pub struct WiThrottleClient<'a, Conn: Read + Write> {
     heartbeat_interval: &'a Signal<CriticalSectionRawMutex, Duration>,
 
     direction: ReverserPosition,
-    speed: u8,
+    throttle_position: ThrottlePosition,
 }
 
 #[derive(Format, Clone)]
@@ -122,11 +122,14 @@ where
             connection: connection.into(),
             locomotives: profile.with(|profile| profile.locomotives.clone()),
             profile,
-            functions: Default::default(),
+            functions: core::array::from_fn(|index| FunctionData {
+                state: matches!(index, STARTUP_INDEX..STARTUP_END),
+                ..Default::default()
+            }),
             line_buffer,
             locomotive_buffer,
             heartbeat_interval,
-            speed: 0,
+            throttle_position: Default::default(),
             direction: Default::default(),
         };
         for address_index in 0..MU_COUNT {
@@ -275,7 +278,6 @@ where
         defmt::trace!("Resetting function mapping for {}...", address_index);
         for index in 0..PROFILE_FUNCTION_COUNT {
             self.functions[index].withrottle_id[address_index] = None;
-            self.functions[index].state = index >= STARTUP_INDEX;
         }
     }
 
@@ -551,10 +553,11 @@ where
     }
 
     async fn send_speed_for(&mut self, address_index: usize) -> Result<(), WiThrottleError> {
-        let speed = if self.direction == ReverserPosition::Neutral {
-            0
-        } else {
-            self.speed
+        let speed = match (self.direction, self.throttle_position) {
+            (ReverserPosition::Neutral, _) | (_, ThrottlePosition::Idle) => 0,
+            (_, throttle_position) => self
+                .profile
+                .with(|profile| profile.speed_curve[throttle_position as usize - 1]),
         };
         self.write_locomotive_action(address_index).await?;
         self.connection.write_all(b"V").await?;
@@ -572,8 +575,11 @@ where
         Ok(())
     }
 
-    pub async fn set_speed(&mut self, step: usize) -> Result<(), WiThrottleError> {
-        self.speed = self.profile.with(|profile| profile.steps)[step];
+    pub async fn set_throttle(
+        &mut self,
+        position: ThrottlePosition,
+    ) -> Result<(), WiThrottleError> {
+        self.throttle_position = position;
         self.send_speed().await?;
         Ok(())
     }

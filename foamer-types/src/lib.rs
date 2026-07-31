@@ -111,7 +111,8 @@ pub struct FunctionConfig {
 pub struct Profile {
     pub locomotives: Vec<Locomotive, MU_COUNT>,
     pub functions: [Option<FunctionConfig>; PROFILE_FUNCTION_COUNT],
-    pub steps: [u8; 9],
+    /// Speed indexed by notch 1 (0) through notch 8 (7)
+    pub speed_curve: [u8; 8],
 }
 
 #[derive(Eq, PartialEq, Clone, Default, Serialize, Deserialize)]
@@ -314,7 +315,7 @@ impl Default for Config {
                     None,
                     None,
                 ],
-                steps: [0, 6, 15, 26, 34, 41, 48, 58, 68],
+                speed_curve: [6, 15, 26, 34, 41, 48, 58, 68],
             }),
         }
     }
@@ -331,6 +332,7 @@ pub const BRAKE_START_INDEX: usize =
     TRIPLE_SWITCH_START_INDEX + (TRIPLE_SWITCHES * TRIPLE_SWITCH_FUNCTION_COUNT);
 pub const HORN_INDEX: usize = BRAKE_START_INDEX + BRAKE_COUNT;
 pub const STARTUP_INDEX: usize = HORN_INDEX + 1;
-pub const PROFILE_FUNCTION_COUNT: usize = STARTUP_INDEX + STARTUP_COUNT;
+pub const STARTUP_END: usize = STARTUP_INDEX + STARTUP_COUNT;
+pub const PROFILE_FUNCTION_COUNT: usize = STARTUP_END;
 
 pub const MU_COUNT: usize = 10;
