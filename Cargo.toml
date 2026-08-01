@@ -7,6 +7,12 @@ members = ["foamer-cli",
 ]
 resolver = "3"
 
+[workspace.package]
+authors = ["Mary Strodl <mstrodl@csh.rit.edu>"]
+description = "Wi-Fi powered remote controller for model trains!"
+repository = "https://github.com/Mstrodl/foamer-firmware"
+homepage = "https://foamer.mstrodl.com"
+
 [profile.release]
 debug = 2
 
