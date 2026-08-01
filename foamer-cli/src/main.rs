@@ -9,6 +9,7 @@ use std::fs::File;
 use std::io::{BufWriter, Read, Write};
 use std::path::PathBuf;
 
+/// CLI tool for managing foamer configs.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -18,19 +19,36 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Send or receive data from an attached device
     Usb {
         #[command(subcommand)]
         action: Action,
     },
+    /// Validate a config file stored on disk
     VerifyConfig {
+        /// Path to json config file on disk
         config_file: PathBuf,
+    },
+    /// Create a new config file from the defaults
+    CreateConfig {
+        /// Path to write new json config file to
+        output_file: PathBuf,
     },
 }
 
 #[derive(Subcommand, Debug)]
 enum Action {
-    Dump { output_file: PathBuf },
-    Program { input_config: PathBuf },
+    /// Save config stored on device to file
+    Dump {
+        /// Path to file where json config will be written
+        output_file: PathBuf,
+    },
+    /// Program config to attached device
+    Program {
+        /// Path to json file config will be read from
+        input_config: PathBuf,
+    },
+    /// Show name and serial number of attached device
     Info,
 }
 
@@ -51,6 +69,13 @@ fn main() -> anyhow::Result<()> {
             let config = std::fs::read(config_file).context("Reading config file")?;
             let _: Config = deserialize_json(&config).context("Deserializing config")?;
             println!("Good config!");
+            Ok(())
+        }
+        Command::CreateConfig { output_file } => {
+            let file = File::create(&output_file).context("Creating output file")?;
+            serde_json::to_writer_pretty(BufWriter::new(file), &Config::default())
+                .context("Writing to config file")?;
+            println!("Wrote to {}!", output_file.display());
             Ok(())
         }
     }
