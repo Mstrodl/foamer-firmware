@@ -1,3 +1,23 @@
+env_scripts = [
+'''
+#!@duckscript
+
+profile_filename = get_env CARGO_MAKE_CARGO_PROFILE
+if eq "${profile_filename}" "dev"
+  profile_filename = set "debug"
+end
+set_env PROFILE_FILENAME "${profile_filename}"
+'''
+]
+[env]
+OUTPUT_DIR = "dist"
+
+[tasks.create-dist-dir]
+script = '''
+#!@duckscript
+mkdir "${OUTPUT_DIR}"
+'''
+
 [tasks.install-llvm-tools]
 install_crate = { rustup_component_name = "llvm-tools" }
 
@@ -10,8 +30,15 @@ install_crate = { crate_name = "cargo-binutils", binary = "cargo", test_arg = [
     "--help",
 ] }
 command = "cargo"
-args = ["objcopy", "--features", "usb-logging", "--release", "--", "-O", "ihex", "foamer-firmware.hex"]
-dependencies = ["install-llvm-tools", "flip-link"]
+args = ["objcopy", "--features", "usb-logging", "--profile", "${CARGO_MAKE_CARGO_PROFILE}", "--", "-O", "ihex", "${OUTPUT_DIR}/${CARGO_MAKE_CRATE_NAME}-${PROFILE_FILENAME}.hex"]
+dependencies = ["install-llvm-tools", "flip-link", "create-dist-dir"]
+
+[tasks.elf]
+script_runner = "@duckscript"
+script = '''
+cp "${CARGO_MAKE_CRATE_CUSTOM_TRIPLE_TARGET_DIRECTORY}/${PROFILE_FILENAME}/${CARGO_MAKE_CRATE_NAME}" "${OUTPUT_DIR}/${CARGO_MAKE_CRATE_NAME}-${PROFILE_FILENAME}.elf"
+'''
+dependencies = ["objcopy"]
 
 [tasks.uf2]
 install_crate = { crate_name = "cargo-hex-to-uf2", binary = "cargo", test_arg = [
@@ -22,10 +49,13 @@ command = "cargo"
 args = [
     "hex-to-uf2",
     "--input-path",
-    "foamer-firmware.hex",
+    "${OUTPUT_DIR}/${CARGO_MAKE_CRATE_NAME}-${PROFILE_FILENAME}.hex",
     "--output-path",
-    "foamer-firmware.uf2",
+    "${OUTPUT_DIR}/${CARGO_MAKE_CRATE_NAME}-${PROFILE_FILENAME}.uf2",
     "--family",
     "rp2040",
 ]
 dependencies = ["objcopy"]
+
+[tasks.archive]
+dependencies = ["elf", "uf2"]

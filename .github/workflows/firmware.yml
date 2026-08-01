@@ -50,12 +50,11 @@ jobs:
         run: cargo install cargo-make
 
       - name: Build UF2
-        run: cd foamer-firmware && cargo make uf2
+        run: cd foamer-firmware && cargo make -p release archive
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: firmware
           path: |
-            foamer-firmware/foamer-firmware.hex
-            foamer-firmware/foamer-firmware.uf2
+            foamer-firmware/dist/*
