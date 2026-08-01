@@ -18,7 +18,7 @@ $ cargo install cargo-make
 
 Build a debug archive:
 
-```
+```bash
 $ cargo make archive
 # Or, for optimized release builds: `cargo make -p release archive`
 ```
@@ -36,13 +36,13 @@ or the github workflows have it enabled) will make `defmt` formatted logs availa
 To view them, we need `defmt-print`.
 
 First, make sure you have `defmt-print` installed:
-```
+```bash
 $ cargo install defmt-print
 ```
 
 Then, you can attach defmt-print to the serial port exposed by the device:
 
-```
+```bash
 $ defmt-print -e foamer-firmware-release.elf serial --path /dev/ttyACM0
 ```
 
